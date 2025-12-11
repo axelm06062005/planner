@@ -129,30 +129,17 @@
         let turnoActualID = null; // Para saber qué fila actualizar
         let fotosZonas = {}; // {zonaNombre: urlFoto}
 
-        function cargarTurnos() {
-    const callbackName = 'jsonpCallback_' + Date.now();
-    window[callbackName] = function(data) {
-        // Limpiar callback y script
-        delete window[callbackName];
-        const script = document.getElementById('jsonpScript');
-        if (script) script.remove();
-
-        if (data.status === 'success' && data.rows) {
-            renderizarTurnos(data.rows);
-        } else {
-            turnosContainer.innerHTML = '<p>Error al cargar los turnos: ' + (data.message || 'Desconocido') + '</p>';
+        async function cargarTurnos() {
+            try {
+                const response = await fetch(WEB_APP_URL + '?accion=leer');
+                const data = await response.json();
+                if (data.status === 'success' && data.rows) {
+                    renderizarTurnos(data.rows);
+                }
+            } catch (err) {
+                turnosContainer.innerHTML = '<p>Error al cargar los turnos.</p>';
+            }
         }
-    };
-
-    // Crear script JSONP
-    const script = document.createElement('script');
-    script.id = 'jsonpScript';
-    script.src = WEB_APP_URL + '?accion=leer&callback=' + callbackName;
-    script.onerror = () => {
-        turnosContainer.innerHTML = '<p>Error de conexión al cargar turnos.</p>';
-    };
-    document.body.appendChild(script);
-}
 
         function renderizarTurnos(rows) {
             turnosContainer.innerHTML = '';
