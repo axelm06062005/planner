@@ -16,11 +16,9 @@
             max-width: 1200px;
             margin: auto;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        /* Tarjetas de turnos horizontales */
+        h1 { text-align: center; color: #2c3e50; }
+
+        /* Turnos */
         .turnos-container {
             display: flex;
             flex-wrap: wrap;
@@ -35,98 +33,64 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             transition: transform 0.2s;
         }
-        .tarjeta-turno:hover {
-            transform: translateY(-5px);
-        }
-        .tarjeta-turno h3 {
-            margin: 0 0 10px;
-            font-size: 1.4em;
-            color: #2c3e50;
-        }
-        .tarjeta-turno p {
-            margin: 8px 0;
-            font-size: 1.1em;
-        }
-        .duracion {
-            font-weight: bold;
-            color: #e74c3c;
-        }
+        .tarjeta-turno:hover { transform: translateY(-5px); }
+        .tarjeta-turno h3 { margin: 0 0 10px; font-size: 1.4em; color: #2c3e50; }
+        .duracion { font-weight: bold; color: #e74c3c; }
         .btn-comenzar {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1.1em;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 15px;
-        }
-        .btn-comenzar:hover {
-            background: #219a52;
+            background: #27ae60; color: white; border: none; padding: 12px 20px;
+            font-size: 1.1em; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px;
         }
 
-        /* Sección de limpieza activa */
+        /* Limpieza activa */
         .limpieza-activa {
-            margin-top: 40px;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: none;
+            margin-top: 40px; background: white; padding: 25px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none;
         }
         .cronometro-regresivo {
-            text-align: center;
-            font-size: 56px;
-            font-weight: bold;
-            color: #e74c3c;
-            margin: 20px 0;
+            text-align: center; font-size: 56px; font-weight: bold; color: #e74c3c; margin: 20px 0;
         }
         .zonas-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px; margin-top: 20px;
         }
         .tarjeta-zona {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px; padding: 18px; text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15); transition: all 0.3s;
         }
-        .tarjeta-zona h4 {
-            margin: 0 0 10px;
+        .tarjeta-zona.terminada {
+            background: #95a5a6 !important; color: white;
         }
-        .tiempo-zona {
-            font-size: 1.1em;
-            color: #3498db;
-            margin-bottom: 10px;
+        .tarjeta-zona.terminada h4, .tarjeta-zona.terminada .tiempo-zona { color: white; }
+        .tarjeta-zona.terminada .mensaje-terminado { font-weight: bold; margin-top: 10px; }
+
+        /* Colores por zona */
+        .zona-bano { background: #f1c40f; } /* Amarillo */
+        .zona-cocina { background: #e74c3c; color: white; } /* Rojo */
+        .zona-habitacion, .zona-sala, .zona-comedor, .zona-lavadero,
+        .zona-balcon, .zona-ventanas { background: #1abc9c; color: white; } /* Verde azulado */
+        .zona-lavado-platos { background: #3498db; color: white; } /* Azul */
+
+        .tiempo-zona { font-size: 1.1em; margin: 10px 0; }
+        .btn-iniciar-zona, .btn-terminar {
+            background: rgba(255,255,255,0.3); color: white; border: none;
+            padding: 8px 16px; margin: 5px; border-radius: 6px; cursor: pointer;
         }
-        .btn-iniciar-zona {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+        .btn-terminar { background: #e67e22 !important; }
         .lista-tareas {
-            margin-top: 15px;
-            text-align: left;
-            display: none;
+            margin-top: 15px; text-align: left; display: none; background: rgba(255,255,255,0.2);
+            padding: 10px; border-radius: 8px;
         }
         .lista-tareas li {
-            margin: 8px 0;
-            display: flex;
-            align-items: center;
+            margin: 8px 0; display: flex; align-items: center; color: white;
         }
-        .lista-tareas input[type="checkbox"] {
-            margin-right: 10px;
+        .lista-tareas input[type="checkbox"] { margin-right: 10px; transform: scale(1.2); }
+
+        .btn-finalizar-limpieza {
+            background: #27ae60; color: white; font-size: 1.4em; padding: 15px 30px;
+            border: none; border-radius: 10px; cursor: pointer; margin-top: 30px; width: 100%;
         }
-        .tarea-disabled {
-            color: #aaa;
-        }
+        #contenedor-finalizar { text-align: center; display: none; }
     </style>
 </head>
 <body>
@@ -134,26 +98,37 @@
         <h1>Turnos de Limpieza</h1>
         <div id="turnos-container" class="turnos-container"></div>
 
-        <!-- Sección de limpieza activa -->
         <div id="limpieza-activa" class="limpieza-activa">
             <h2 id="titulo-turno">Turno Actual</h2>
             <div class="cronometro-regresivo">00:00</div>
             <div id="zonas-container" class="zonas-container"></div>
+            <div id="contenedor-finalizar">
+                <button class="btn-finalizar-limpieza">Finalizar Limpieza</button>
+            </div>
         </div>
     </div>
 
+    <!-- Input oculto para cámara -->
+    <input type="file" id="input-camara" accept="image/*" capture="environment" style="display:none;">
+
     <script>
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzoPq1_9VID28xX50z1WPfV1UYTz58kAMhh8sJiGtZsdVr1SM9Uv7ss2CzYPcdTTzEX2w/exec';
+        const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload';
+        const UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET'; // Reemplaza con tu preset unsigned
+
         const turnosContainer = document.getElementById('turnos-container');
         const limpiezaActiva = document.getElementById('limpieza-activa');
         const tituloTurno = document.getElementById('titulo-turno');
         const cronometroDisplay = document.querySelector('.cronometro-regresivo');
         const zonasContainer = document.getElementById('zonas-container');
+        const contenedorFinalizar = document.getElementById('contenedor-finalizar');
+        const inputCamara = document.getElementById('input-camara');
 
         let intervaloRegresivo = null;
         let tiempoRestante = 0;
+        let turnoActualID = null; // Para saber qué fila actualizar
+        let fotosZonas = {}; // {zonaNombre: urlFoto}
 
-        // Cargar turnos desde el Sheet
         async function cargarTurnos() {
             try {
                 const response = await fetch(WEB_APP_URL + '?accion=leer');
@@ -168,9 +143,9 @@
 
         function renderizarTurnos(rows) {
             turnosContainer.innerHTML = '';
-            rows.forEach((row, index) => {
-                // Asumiendo orden: ID, Día, Horario, Tipo, NroAmb, Hab, Baños, Sala, Cocina, Comedor, Lavadero, Balcón, Ventanas, LavPlatos, Duración
+            rows.forEach((row) => {
                 const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracion] = row;
+                if (!id) return; // Saltar filas vacías
 
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'tarjeta-turno';
@@ -187,6 +162,7 @@
 
         function iniciarLimpieza(row) {
             const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracionStr] = row;
+            turnoActualID = id || Date.now(); // Usa ID si existe
             const duracion = parseInt(duracionStr) || 0;
 
             tituloTurno.textContent = `${dia} ${horario} - ${tipo} ${nroAmb || ''}`;
@@ -198,13 +174,15 @@
                 actualizarCronometro();
                 if (tiempoRestante <= 0) {
                     clearInterval(intervaloRegresivo);
-                    cronometroDisplay.textContent = '¡Completado!';
+                    cronometroDisplay.textContent = '¡Tiempo terminado!';
                 }
             }, 1000);
 
+            fotosZonas = {};
             generarZonas(row);
             turnosContainer.style.display = 'none';
             limpiezaActiva.style.display = 'block';
+            contenedorFinalizar.style.display = 'none';
         }
 
         function actualizarCronometro() {
@@ -224,106 +202,134 @@
             const esCompleta = tipo.includes('Completa');
             const tiempoBanoCocina = esCompleta ? 55 : 35;
 
-            // Habitaciones
             const numHab = parseInt(hab) || 0;
-            for (let i = 1; i <= numHab; i++) {
-                agregarZona(`Habitación ${i}`, 25, tareasGenerales);
-            }
-            // Sala de estar
-            if (sala === 'Sí') agregarZona('Sala de Estar', 25, tareasGenerales);
-            // Comedor
-            if (comedor === 'Sí') agregarZona('Comedor', 25, tareasGenerales);
-            // Baños
+            for (let i = 1; i <= numHab; i++) agregarZona(`Habitación ${i}`, 25, tareasGenerales, 'zona-habitacion');
+            if (sala === 'Sí') agregarZona('Sala de Estar', 25, tareasGenerales, 'zona-sala');
+            if (comedor === 'Sí') agregarZona('Comedor', 25, tareasGenerales, 'zona-comedor');
             const numBanos = parseInt(banos) || 0;
-            for (let i = 1; i <= numBanos; i++) {
-                agregarZona(`Baño ${i}`, tiempoBanoCocina, tareasBano);
-            }
-            // Cocina
-            if (cocina === 'Sí') agregarZona('Cocina', tiempoBanoCocina, tareasCocina);
-            // Opcionales
-            if (lavadero === 'Sí') agregarZona('Lavadero', 10, tareasGenerales);
-            if (balcon === 'Sí') agregarZona('Balcón', 10, tareasGenerales);
-            if (ventanas === 'Sí') agregarZona('Ventanas', 10, tareasGenerales);
-            if (lavPlatos === 'Sí') agregarZona('Lavado de Platos', 10, tareasGenerales);
+            for (let i = 1; i <= numBanos; i++) agregarZona(`Baño ${i}`, tiempoBanoCocina, tareasBano, 'zona-bano');
+            if (cocina === 'Sí') agregarZona('Cocina', tiempoBanoCocina, tareasCocina, 'zona-cocina');
+            if (lavadero === 'Sí') agregarZona('Lavadero', 10, tareasGenerales, 'zona-lavadero');
+            if (balcon === 'Sí') agregarZona('Balcón', 10, tareasGenerales, 'zona-balcon');
+            if (ventanas === 'Sí') agregarZona('Ventanas', 10, tareasGenerales, 'zona-ventanas');
+            if (lavPlatos === 'Sí') agregarZona('Lavado de Platos', 10, tareasGenerales, 'zona-lavado-platos');
         }
 
-        const tareasGenerales = [
-            "Telarañas de techos (plumero)",
-            "Polvo muebles y estantes (plumero y paño seco)",
-            "Aspirado de pisos",
-            "Mopeado",
-            "Aromatización",
-            "Revisión final"
-        ];
+        const tareasGenerales = ["Telarañas de techos (plumero)","Polvo muebles y estantes (plumero y paño seco)","Aspirado de pisos","Mopeado","Aromatización","Revisión final"];
+        const tareasBano = ["Telarañas de techo (plumero)","Espejo (paño microfibra + limpiavidrios)","Inodoro y bidet (paño + lavandina)","Aspirado","Mopeado","Retiro y cambio de bolsa","Aromatización","Revisión final"];
+        const tareasCocina = ["Alacena (plumero y paño seco)","Electrodomésticos (paño + desengrasante)","Bacha y Hornallas (paño + desengrasante)","Aspirado","Mopeado","Aromatización","Revisión final"];
 
-        const tareasBano = [
-            "Telarañas de techo (plumero)",
-            "Espejo (paño microfibra + limpiavidrios)",
-            "Inodoro y bidet (paño + lavandina)",
-            "Aspirado",
-            "Mopeado",
-            "Retiro y cambio de bolsa",
-            "Aromatización",
-            "Revisión final"
-        ];
-
-        const tareasCocina = [
-            "Alacena (plumero y paño seco)",
-            "Electrodomésticos (paño + desengrasante)",
-            "Bacha y Hornallas (paño + desengrasante)",
-            "Aspirado",
-            "Mopeado",
-            "Aromatización",
-            "Revisión final"
-        ];
-
-        function agregarZona(nombre, minutos, listaTareas) {
+        function agregarZona(nombre, minutos, listaTareas, claseColor) {
             const zona = document.createElement('div');
-            zona.className = 'tarjeta-zona';
+            zona.className = `tarjeta-zona ${claseColor}`;
             zona.innerHTML = `
                 <h4>${nombre}</h4>
                 <div class="tiempo-zona">${minutos} minutos</div>
-                <button class="btn-iniciar-zona">Iniciar</button>
+                <button class="btn-iniciar-zona">Iniciar Tareas</button>
+                <button class="btn-terminar">Terminar Zona</button>
                 <ul class="lista-tareas"></ul>
+                <div class="mensaje-terminado" style="display:none;">¡Terminado!</div>
             `;
 
             const btnIniciar = zona.querySelector('.btn-iniciar-zona');
+            const btnTerminar = zona.querySelector('.btn-terminar');
             const ul = zona.querySelector('.lista-tareas');
+            const mensajeTerminado = zona.querySelector('.mensaje-terminado');
 
             btnIniciar.addEventListener('click', () => {
-                if (ul.style.display === 'block') {
-                    ul.style.display = 'none';
-                    btnIniciar.textContent = 'Iniciar';
-                } else {
-                    ul.style.display = 'block';
-                    btnIniciar.textContent = 'Ocultar';
-                    if (ul.children.length === 0) {
-                        listaTareas.forEach((tarea, idx) => {
-                            const li = document.createElement('li');
-                            const checkbox = document.createElement('input');
-                            checkbox.type = 'checkbox';
-                            if (idx === listaTareas.length - 1) checkbox.disabled = true; // Revisión final
-                            checkbox.addEventListener('change', () => {
-                                if (idx < listaTareas.length - 1) {
-                                    // Habilitar revisión final solo si todas las anteriores están marcadas
-                                    const revisionCheckbox = ul.querySelector('input[type="checkbox"]:last-child');
-                                    const todasAnteriores = Array.from(ul.querySelectorAll('input[type="checkbox"]'))
-                                        .slice(0, -1).every(cb => cb.checked);
-                                    revisionCheckbox.disabled = !todasAnteriores;
-                                }
-                            });
-                            li.appendChild(checkbox);
-                            li.appendChild(document.createTextNode(tarea));
-                            ul.appendChild(li);
+                ul.style.display = ul.style.display === 'block' ? 'none' : 'block';
+                btnIniciar.textContent = ul.style.display === 'block' ? 'Ocultar' : 'Iniciar Tareas';
+                if (ul.children.length === 0) {
+                    listaTareas.forEach((tarea, idx) => {
+                        const li = document.createElement('li');
+                        const cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        if (idx === listaTareas.length - 1) cb.disabled = true;
+                        cb.addEventListener('change', () => {
+                            if (idx < listaTareas.length - 1) {
+                                const revisionCb = ul.querySelector('input[type="checkbox"]:last-child');
+                                const todasPrevias = Array.from(ul.querySelectorAll('input[type="checkbox"]')).slice(0, -1).every(c => c.checked);
+                                revisionCb.disabled = !todasPrevias;
+                                // Si se marca revisión final, habilitar botón terminar
+                                if (revisionCb.checked) btnTerminar.disabled = false;
+                            }
                         });
-                    }
+                        li.appendChild(cb);
+                        li.appendChild(document.createTextNode(tarea));
+                        ul.appendChild(li);
+                    });
                 }
+            });
+
+            btnTerminar.disabled = true;
+            btnTerminar.addEventListener('click', () => {
+                inputCamara.click();
+                inputCamara.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const url = await subirFotoCloudinary(file);
+                    if (url) {
+                        fotosZonas[nombre] = url;
+                        zona.classList.add('terminada');
+                        ul.style.display = 'none';
+                        btnIniciar.style.display = 'none';
+                        btnTerminar.style.display = 'none';
+                        mensajeTerminado.style.display = 'block';
+                        verificarTodasZonasTerminadas();
+                    }
+                };
             });
 
             zonasContainer.appendChild(zona);
         }
 
-        // Cargar turnos al iniciar
+        async function subirFotoCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', UPLOAD_PRESET);
+
+            try {
+                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                const data = await response.json();
+                return data.secure_url;
+            } catch (err) {
+                alert('Error al subir foto');
+                return null;
+            }
+        }
+
+        function verificarTodasZonasTerminadas() {
+            const zonas = document.querySelectorAll('.tarjeta-zona');
+            const todasTerminadas = Array.from(zonas).every(z => z.classList.contains('terminada'));
+            if (todasTerminadas) {
+                contenedorFinalizar.style.display = 'block';
+                document.querySelector('.btn-finalizar-limpieza').onclick = finalizarLimpiezaCompleta;
+            }
+        }
+
+        async function finalizarLimpiezaCompleta() {
+            const urlsFotos = Object.values(fotosZonas).join(', ');
+            const datos = {
+                accion: 'finalizar',
+                id: turnoActualID,
+                estado: 'Finalizada',
+                fotos: urlsFotos
+            };
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                alert('¡Limpieza finalizada y guardada correctamente!');
+                location.reload();
+            } catch (err) {
+                alert('Error al finalizar. Intenta de nuevo.');
+            }
+        }
+
         cargarTurnos();
     </script>
 </body>
