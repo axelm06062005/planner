@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tareas con Cronómetro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #eee;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        li.completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .cronometro {
+            text-align: center;
+            font-size: 48px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .botones-crono {
+            text-align: center;
+        }
+        .botones-crono button {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lista de Tareas con Cronómetro</h1>
+        
+        <h2>Cronómetro</h2>
+        <div class="cronometro">00:00:00</div>
+        <div class="botones-crono">
+            <button id="iniciar">Iniciar</button>
+            <button id="pausar" disabled>Pausar</button>
+            <button id="reiniciar" disabled>Reiniciar</button>
+        </div>
+        
+        <h2>Agregar Tarea</h2>
+        <input type="text" id="nuevaTarea" placeholder="Escribe una tarea...">
+        <button id="agregar">Agregar</button>
+        
+        <h2>Tareas</h2>
+        <ul id="listaTareas"></ul>
+    </div>
+
+    <script>
+        // --- Cronómetro ---
+        let tiempo = 0; // en segundos
+        let intervalo = null;
+        const display = document.querySelector('.cronometro');
+        const btnIniciar = document.getElementById('iniciar');
+        const btnPausar = document.getElementById('pausar');
+        const btnReiniciar = document.getElementById('reiniciar');
+
+        function formatearTiempo(seg) {
+            const horas = Math.floor(seg / 3600).toString().padStart(2, '0');
+            const minutos = Math.floor((seg % 3600) / 60).toString().padStart(2, '0');
+            const segundos = (seg % 60).toString().padStart(2, '0');
+            return `${horas}:${minutos}:${segundos}`;
+        }
+
+        function actualizarDisplay() {
+            display.textContent = formatearTiempo(tiempo);
+        }
+
+        btnIniciar.addEventListener('click', () => {
+            if (!intervalo) {
+                intervalo = setInterval(() => {
+                    tiempo++;
+                    actualizarDisplay();
+                }, 1000);
+                btnIniciar.disabled = true;
+                btnPausar.disabled = false;
+                btnReiniciar.disabled = false;
+            }
+        });
+
+        btnPausar.addEventListener('click', () => {
+            clearInterval(intervalo);
+            intervalo = null;
+            btnIniciar.disabled = false;
+            btnIniciar.textContent = 'Reanudar';
+            btnPausar.disabled = true;
+        });
+
+        btnReiniciar.addEventListener('click', () => {
+            clearInterval(intervalo);
+            intervalo = null;
+            tiempo = 0;
+            actualizarDisplay();
+            btnIniciar.disabled = false;
+            btnIniciar.textContent = 'Iniciar';
+            btnPausar.disabled = true;
+            btnReiniciar.disabled = true;
+        });
+
+        // Inicializar display
+        actualizarDisplay();
+
+        // --- Lista de Tareas ---
+        const inputTarea = document.getElementById('nuevaTarea');
+        const btnAgregar = document.getElementById('agregar');
+        const lista = document.getElementById('listaTareas');
+
+        btnAgregar.addEventListener('click', agregarTarea);
+        inputTarea.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') agregarTarea();
+        });
+
+        function agregarTarea() {
+            const texto = inputTarea.value.trim();
+            if (texto === '') return;
+
+            const li = document.createElement('li');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            const span = document.createElement('span');
+            span.textContent = texto;
+            const btnEliminar = document.createElement('button');
+            btnEliminar.textContent = 'Eliminar';
+
+            checkbox.addEventListener('change', () => {
+                li.classList.toggle('completed');
+            });
+
+            btnEliminar.addEventListener('click', () => {
+                lista.removeChild(li);
+            });
+
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(btnEliminar);
+            lista.appendChild(li);
+
+            inputTarea.value = '';
+        }
+    </script>
+</body>
+</html>
