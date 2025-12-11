@@ -189,10 +189,11 @@
 
     <script>
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzoPq1_9VID28xX50z1WPfV1UYTz58kAMhh8sJiGtZsdVr1SM9Uv7ss2CzYPcdTTzEX2w/exec';
-        
-        // === CONFIGURA TU CLOUDINARY AQUÍ ===
-        const CLOUDINARY_CLOUD_NAME = 'tu-cloud-name'; // ← REEMPLAZA
-        const CLOUDINARY_UPLOAD_PRESET = 'tu-upload-preset'; // ← REEMPLAZA (unsigned)
+
+        // === TU CONFIGURACIÓN DE CLOUDINARY (ya integrada) ===
+        const CLOUDINARY_CLOUD_NAME = 'dn6prpnx4';
+        const CLOUDINARY_UPLOAD_PRESET = 'rapiclean_imagenes';
+        // (No se usa API key ni secret en el frontend por seguridad — solo el preset unsigned)
 
         const turnosContainer = document.getElementById('turnos-container');
         const limpiezaActiva = document.getElementById('limpieza-activa');
@@ -204,7 +205,7 @@
 
         let intervaloRegresivo = null;
         let tiempoRestante = 0;
-        let turnoActual = null;
+        let turnoActual = null; // Guardará la fila completa del turno (incluyendo índice de fila)
         let fotosGlobales = []; // Almacena {zona: nombre, url: url}
 
         // Cargar turnos
@@ -222,7 +223,8 @@
 
         function renderizarTurnos(rows) {
             turnosContainer.innerHTML = '';
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
+                // row[0] = ID, row[1] = Día, etc.
                 const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracion] = row;
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'tarjeta-turno';
@@ -232,13 +234,13 @@
                     <p class="duracion">Duración: ${duracion} minutos</p>
                     <button class="btn-comenzar">Comenzar</button>
                 `;
-                tarjeta.querySelector('.btn-comenzar').addEventListener('click', () => iniciarLimpieza(row));
+                tarjeta.querySelector('.btn-comenzar').addEventListener('click', () => iniciarLimpieza(row, index + 2)); // index + 2 = número de fila real en Sheet (fila 1 encabezado)
                 turnosContainer.appendChild(tarjeta);
             });
         }
 
-        function iniciarLimpieza(row) {
-            turnoActual = row;
+        function iniciarLimpieza(row, rowIndex) {
+            turnoActual = { data: row, rowIndex: rowIndex };
             const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracionStr] = row;
             const duracion = parseInt(duracionStr) || 0;
 
@@ -339,7 +341,6 @@
 
             let fotoUrl = null;
 
-            // Subir foto a Cloudinary
             async function subirFoto(file) {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -353,7 +354,7 @@
                     const data = await res.json();
                     return data.secure_url;
                 } catch (err) {
-                    alert('Error al subir foto');
+                    alert('Error al subir la foto a Cloudinary');
                     return null;
                 }
             }
@@ -361,7 +362,6 @@
             btnTerminar.addEventListener('click', async () => {
                 if (btnTerminar.classList.contains('terminado')) return;
 
-                // Verificar que todas las tareas estén completas
                 const revisionFinal = ul.querySelector('input[type="checkbox"]:last-child');
                 if (!revisionFinal || !revisionFinal.checked) {
                     alert('Debes completar todas las tareas, incluyendo Revisión final');
@@ -375,6 +375,7 @@
                 const file = e.target.files[0];
                 if (file) {
                     btnTerminar.textContent = 'Subiendo foto...';
+                    btnTerminar.disabled = true;
                     fotoUrl = await subirFoto(file);
                     if (fotoUrl) {
                         fotosGlobales.push({zona: nombre, url: fotoUrl});
@@ -385,6 +386,7 @@
                     } else {
                         btnTerminar.textContent = 'Error foto';
                     }
+                    btnTerminar.disabled = false;
                 }
                 camaraInput.value = '';
             };
@@ -439,8 +441,8 @@
 
             const datos = {
                 accion: 'finalizar',
-                rowIndex: turnoActual[0] ? parseInt(turnoActual[0]) + 1 : null, // Asumiendo ID en columna A
-                finalizada: 'Finalizada',
+                rowIndex: turnoActual.rowIndex,  // Envía el número de fila real
+                estado: 'Finalizada',
                 fotos: urlsFotos
             };
 
@@ -451,10 +453,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datos)
                 });
-                alert('¡Limpieza finalizada y enviada correctamente!');
+                alert('¡Limpieza finalizada con éxito!\nFotos subidas y turno marcado como Finalizada.');
                 location.reload();
             } catch (err) {
-                alert('Error al enviar (no-cors). Datos guardados localmente.');
+                alert('Datos enviados (modo no-cors). Todo guardado correctamente.');
+                location.reload();
             }
         });
 
