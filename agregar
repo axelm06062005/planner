@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregador de Limpiezas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        select, input {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .form-section {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .tarjeta {
+            background: #eef;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        .tarjeta button {
+            margin: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+        }
+        .tarjeta button.added {
+            background: #2196F3;
+        }
+        .duracion {
+            font-weight: bold;
+            color: #d35400;
+        }
+        #tarjetas-container {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agregador de Limpiezas</h1>
+        <p>Primero selecciona Día y Horario desde tu base de datos (Google Sheets). Copia y pega los valores disponibles o elige uno.</p>
+        <label>Día: <input type="text" id="dia" placeholder="Ej: Lunes"></label><br>
+        <label>Horario: <input type="text" id="horario" placeholder="Ej: 14:00"></label><br><br>
+
+        <button id="btn-agregar">Agregar Limpieza</button>
+
+        <!-- Selección de Tipo -->
+        <div id="seccion-tipo" class="form-section">
+            <h2>Tipo de Limpieza</h2>
+            <button data-tipo="Básica">Básica</button>
+            <button data-tipo="Completa">Completa</button>
+        </div>
+
+        <!-- Selección de Ambientes -->
+        <div id="seccion-ambientes" class="form-section">
+            <h2>Número de Ambientes</h2>
+            <button data-amb="Monoambiente">Monoambiente</button>
+            <button data-amb="2 Ambientes">2 Ambientes</button>
+            <button data-amb="3 Ambientes">3 Ambientes</button>
+            <button id="btn-otro">Otro</button>
+        </div>
+
+        <!-- Formulario personalizado para Otro -->
+        <div id="seccion-otro" class="form-section">
+            <h2>Configuración Personalizada</h2>
+            <label>Habitaciones: <input type="number" id="num-habitaciones" min="0" value="1"></label><br>
+            <label>Baños: <input type="number" id="num-banos" min="0" value="1"></label><br>
+            <label>Sala de Estar: 
+                <select id="sala"><option value="si">Sí</option><option value="no">No</option></select>
+            </label><br>
+            <label>Cocina: 
+                <select id="cocina"><option value="si">Sí</option><option value="no">No</option></select>
+            </label><br>
+            <label>Comedor: 
+                <select id="comedor"><option value="si">Sí</option><option value="no">No</option></select>
+            </label><br><br>
+            <button id="btn-confirmar-otro">Confirmar y Agregar</button>
+        </div>
+
+        <div id="tarjetas-container"></div>
+    </div>
+
+    <script>
+        const btnAgregar = document.getElementById('btn-agregar');
+        const seccionTipo = document.getElementById('seccion-tipo');
+        const seccionAmbientes = document.getElementById('seccion-ambientes');
+        const seccionOtro = document.getElementById('seccion-otro');
+        const contenedorTarjetas = document.getElementById('tarjetas-container');
+
+        let tipoSeleccionado = '';
+        let dia = '';
+        let horario = '';
+
+        btnAgregar.addEventListener('click', () => {
+            dia = document.getElementById('dia').value.trim();
+            horario = document.getElementById('horario').value.trim();
+            if (!dia || !horario) {
+                alert('Por favor ingresa Día y Horario');
+                return;
+            }
+            seccionTipo.style.display = 'block';
+            seccionAmbientes.style.display = 'none';
+            seccionOtro.style.display = 'none';
+        });
+
+        // Selección de Tipo
+        document.querySelectorAll('#seccion-tipo button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                tipoSeleccionado = btn.dataset.tipo;
+                seccionTipo.style.display = 'none';
+                seccionAmbientes.style.display = 'block';
+            });
+        });
+
+        // Selección de Ambientes predefinidos
+        document.querySelectorAll('#seccion-ambientes button[data-amb]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const ambientes = btn.dataset.amb;
+                crearTarjetaPredefinida(ambientes);
+                resetForm();
+            });
+        });
+
+        // Botón Otro
+        document.getElementById('btn-otro').addEventListener('click', () => {
+            seccionAmbientes.style.display = 'none';
+            seccionOtro.style.display = 'block';
+        });
+
+        // Confirmar Otro
+        document.getElementById('btn-confirmar-otro').addEventListener('click', () => {
+            crearTarjetaPersonalizada();
+            resetForm();
+        });
+
+        function resetForm() {
+            seccionTipo.style.display = 'none';
+            seccionAmbientes.style.display = 'none';
+            seccionOtro.style.display = 'none';
+            document.getElementById('dia').value = '';
+            document.getElementById('horario').value = '';
+        }
+
+        function crearTarjetaPredefinida(ambientes) {
+            let duracionBase = 0;
+            if (tipoSeleccionado === 'Básica') {
+                if (ambientes === 'Monoambiente') duracionBase = 45;
+                if (ambientes === '2 Ambientes') duracionBase = 60;
+                if (ambientes === '3 Ambientes') duracionBase = 100;
+            } else if (tipoSeleccionado === 'Completa') {
+                if (ambientes === 'Monoambiente') duracionBase = 60;
+                if (ambientes === '2 Ambientes') duracionBase = 100;
+                if (ambientes === '3 Ambientes') duracionBase = 130;
+            }
+            crearTarjeta(`${tipoSeleccionado} - ${ambientes}`, duracionBase);
+        }
+
+        function crearTarjetaPersonalizada() {
+            const hab = parseInt(document.getElementById('num-habitaciones').value) || 0;
+            const banos = parseInt(document.getElementById('num-banos').value) || 0;
+            const sala = document.getElementById('sala').value === 'si' ? 1 : 0;
+            const cocina = document.getElementById('cocina').value === 'si' ? 1 : 0;
+            const comedor = document.getElementById('comedor').value === 'si' ? 1 : 0;
+
+            let duracionBase = 0;
+            const general = hab + sala + comedor;
+            duracionBase += general * 25;
+
+            const multBanoCocina = tipoSeleccionado === 'Básica' ? 35 : 55;
+            duracionBase += banos * multBanoCocina;
+            duracionBase += cocina * multBanoCocina;
+
+            const titulo = `${tipoSeleccionado} - Personalizado (${hab} hab, ${banos} baños, sala:${sala}, cocina:${cocina}, comedor:${comedor})`;
+            crearTarjeta(titulo, duracionBase);
+        }
+
+        function crearTarjeta(titulo, duracionBase) {
+            const tarjeta = document.createElement('div');
+            tarjeta.className = 'tarjeta';
+
+            let extras = 0;
+            const extrasTexto = [];
+
+            const opcionales = ['Lavadero', 'Balcón', 'Ventanas', 'Lavado de Platos'];
+            opcionales.forEach(op => {
+                const btn = document.createElement('button');
+                btn.textContent = op + ' (+10 min)';
+                btn.addEventListener('click', () => {
+                    if (!btn.classList.contains('added')) {
+                        extras += 10;
+                        extrasTexto.push(op);
+                        btn.classList.add('added');
+                        btn.textContent = op + ' ✓';
+                        actualizarDuracion();
+                    }
+                });
+                tarjeta.appendChild(btn);
+            });
+
+            const tituloElem = document.createElement('h3');
+            tituloElem.textContent = titulo;
+            tarjeta.appendChild(tituloElem);
+
+            const info = document.createElement('p');
+            info.innerHTML = `Día: <strong>${dia}</strong> | Horario: <strong>${horario}</strong><br>
+                              Duración: <span class="duracion">${duracionBase} minutos</span>`;
+            tarjeta.appendChild(info);
+
+            function actualizarDuracion() {
+                const total = duracionBase + extras;
+                tarjeta.querySelector('.duracion').textContent = `${total} minutos`;
+            }
+
+            contenedorTarjetas.appendChild(tarjeta);
+        }
+    </script>
+</body>
+</html>
