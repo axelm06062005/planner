@@ -77,7 +77,7 @@
         .cronometro-regresivo {
             text-align: center;
             font-size: 56px;
-            font-weight: bold;
+            font-weight: bold Warn;
             color: #e74c3c;
             margin: 20px 0;
         }
@@ -105,10 +105,10 @@
         }
 
         /* Colores por zona */
-        .zona-bano { background: #f9e79f; } /* Amarillo claro */
-        .zona-cocina { background: #f8b0b0; } /* Rojo claro */
-        .zona-general { background: #a7d8f9; } /* Azul claro */
-        .zona-opcional { background: #c8e6c9; } /* Verde claro */
+        .zona-bano { background: #f9e79f; }
+        .zona-cocina { background: #f8b0b0; }
+        .zona-general { background: #a7d8f9; }
+        .zona-opcional { background: #c8e6c9; }
 
         .tarjeta-zona h4 {
             margin: 0 0 10px;
@@ -184,16 +184,14 @@
         </div>
     </div>
 
-    <!-- Input oculto para cámara -->
+    <!-- Input oculto para cámara (uno solo, pero manejado por zona) -->
     <input type="file" id="camara-input" accept="image/*" capture="environment" style="display:none;">
 
     <script>
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzoPq1_9VID28xX50z1WPfV1UYTz58kAMhh8sJiGtZsdVr1SM9Uv7ss2CzYPcdTTzEX2w/exec';
 
-        // === TU CONFIGURACIÓN DE CLOUDINARY (ya integrada) ===
         const CLOUDINARY_CLOUD_NAME = 'dn6prpnx4';
         const CLOUDINARY_UPLOAD_PRESET = 'rapiclean_imagenes';
-        // (No se usa API key ni secret en el frontend por seguridad — solo el preset unsigned)
 
         const turnosContainer = document.getElementById('turnos-container');
         const limpiezaActiva = document.getElementById('limpieza-activa');
@@ -205,10 +203,9 @@
 
         let intervaloRegresivo = null;
         let tiempoRestante = 0;
-        let turnoActual = null; // Guardará la fila completa del turno (incluyendo índice de fila)
-        let fotosGlobales = []; // Almacena {zona: nombre, url: url}
+        let turnoActual = null;
+        let fotosGlobales = [];
 
-        // Cargar turnos
         async function cargarTurnos() {
             try {
                 const response = await fetch(WEB_APP_URL + '?accion=leer');
@@ -224,7 +221,6 @@
         function renderizarTurnos(rows) {
             turnosContainer.innerHTML = '';
             rows.forEach((row, index) => {
-                // row[0] = ID, row[1] = Día, etc.
                 const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracion] = row;
                 const tarjeta = document.createElement('div');
                 tarjeta.className = 'tarjeta-turno';
@@ -234,7 +230,7 @@
                     <p class="duracion">Duración: ${duracion} minutos</p>
                     <button class="btn-comenzar">Comenzar</button>
                 `;
-                tarjeta.querySelector('.btn-comenzar').addEventListener('click', () => iniciarLimpieza(row, index + 2)); // index + 2 = número de fila real en Sheet (fila 1 encabezado)
+                tarjeta.querySelector('.btn-comenzar').addEventListener('click', () => iniciarLimpieza(row, index + 2));
                 turnosContainer.appendChild(tarjeta);
             });
         }
@@ -339,7 +335,8 @@
             const btnTerminar = zona.querySelector('.btn-terminar');
             const ul = zona.querySelector('.lista-tareas');
 
-            let fotoUrl = null;
+            // Variables locales para esta zona
+            let zonaTerminada = false;
 
             async function subirFoto(file) {
                 const formData = new FormData();
@@ -359,29 +356,19 @@
                 }
             }
 
-            btnTerminar.addEventListener('click', async () => {
-                if (btnTerminar.classList.contains('terminado')) return;
-
-                const revisionFinal = ul.querySelector('input[type="checkbox"]:last-child');
-                if (!revisionFinal || !revisionFinal.checked) {
-                    alert('Debes completar todas las tareas, incluyendo Revisión final');
-                    return;
-                }
-
-                camaraInput.click();
-            });
-
-            camaraInput.onchange = async (e) => {
+            // Manejador específico para esta zona
+            const manejadorFoto = async (e) => {
                 const file = e.target.files[0];
-                if (file) {
+                if (file && !zonaTerminada) {
                     btnTerminar.textContent = 'Subiendo foto...';
                     btnTerminar.disabled = true;
-                    fotoUrl = await subirFoto(file);
+                    const fotoUrl = await subirFoto(file);
                     if (fotoUrl) {
                         fotosGlobales.push({zona: nombre, url: fotoUrl});
                         btnTerminar.textContent = 'Terminado ✓';
                         btnTerminar.classList.add('terminado');
                         zona.classList.add('terminada');
+                        zonaTerminada = true;
                         verificarTodasZonasTerminadas();
                     } else {
                         btnTerminar.textContent = 'Error foto';
@@ -389,7 +376,22 @@
                     btnTerminar.disabled = false;
                 }
                 camaraInput.value = '';
+                camaraInput.removeEventListener('change', manejadorFoto); // Remover para evitar conflictos
             };
+
+            btnTerminar.addEventListener('click', () => {
+                if (zonaTerminada) return;
+
+                const revisionFinal = ul.querySelector('input[type="checkbox"]:last-child');
+                if (!revisionFinal || !revisionFinal.checked) {
+                    alert('Debes completar todas las tareas, incluyendo Revisión final');
+                    return;
+                }
+
+                // Asignar manejador específico y abrir cámara
+                camaraInput.addEventListener('change', manejadorFoto);
+                camaraInput.click();
+            });
 
             btnIniciar.addEventListener('click', () => {
                 if (ul.style.display === 'block') {
@@ -441,7 +443,7 @@
 
             const datos = {
                 accion: 'finalizar',
-                rowIndex: turnoActual.rowIndex,  // Envía el número de fila real
+                rowIndex: turnoActual.rowIndex,
                 estado: 'Finalizada',
                 fotos: urlsFotos
             };
@@ -456,7 +458,7 @@
                 alert('¡Limpieza finalizada con éxito!\nFotos subidas y turno marcado como Finalizada.');
                 location.reload();
             } catch (err) {
-                alert('Datos enviados (modo no-cors). Todo guardado correctamente.');
+                alert('Datos enviados correctamente (modo no-cors).');
                 location.reload();
             }
         });
