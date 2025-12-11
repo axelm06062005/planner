@@ -3,178 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Tareas con Cronómetro</title>
+    <title>Turnos de Limpieza</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
             color: #333;
         }
         .container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        h1, h2 {
+        h1 {
             text-align: center;
+            color: #2c3e50;
         }
-        input[type="text"] {
-            width: 70%;
-            padding: 10px;
-            font-size: 16px;
+        /* Tarjetas de turnos horizontales */
+        .turnos-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
         }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
+        .tarjeta-turno {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 380px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .tarjeta-turno:hover {
+            transform: translateY(-5px);
+        }
+        .tarjeta-turno h3 {
+            margin: 0 0 10px;
+            font-size: 1.4em;
+            color: #2c3e50;
+        }
+        .tarjeta-turno p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+        .duracion {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .btn-comenzar {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn-comenzar:hover {
+            background: #219a52;
+        }
+
+        /* Sección de limpieza activa */
+        .limpieza-activa {
+            margin-top: 40px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .cronometro-regresivo {
+            text-align: center;
+            font-size: 56px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 20px 0;
+        }
+        .zonas-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .tarjeta-zona {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .tarjeta-zona h4 {
+            margin: 0 0 10px;
+        }
+        .tiempo-zona {
+            font-size: 1.1em;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        .btn-iniciar-zona {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
             cursor: pointer;
         }
-        ul {
-            list-style: none;
-            padding: 0;
+        .lista-tareas {
+            margin-top: 15px;
+            text-align: left;
+            display: none;
         }
-        li {
-            background: #eee;
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 5px;
+        .lista-tareas li {
+            margin: 8px 0;
             display: flex;
             align-items: center;
-            justify-content: space-between;
         }
-        li.completed {
-            text-decoration: line-through;
-            color: #888;
+        .lista-tareas input[type="checkbox"] {
+            margin-right: 10px;
         }
-        .cronometro {
-            text-align: center;
-            font-size: 48px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .botones-crono {
-            text-align: center;
-        }
-        .botones-crono button {
-            margin: 0 10px;
+        .tarea-disabled {
+            color: #aaa;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Lista de Tareas con Cronómetro</h1>
-        
-        <h2>Cronómetro</h2>
-        <div class="cronometro">00:00:00</div>
-        <div class="botones-crono">
-            <button id="iniciar">Iniciar</button>
-            <button id="pausar" disabled>Pausar</button>
-            <button id="reiniciar" disabled>Reiniciar</button>
+        <h1>Turnos de Limpieza</h1>
+        <div id="turnos-container" class="turnos-container"></div>
+
+        <!-- Sección de limpieza activa -->
+        <div id="limpieza-activa" class="limpieza-activa">
+            <h2 id="titulo-turno">Turno Actual</h2>
+            <div class="cronometro-regresivo">00:00</div>
+            <div id="zonas-container" class="zonas-container"></div>
         </div>
-        
-        <h2>Agregar Tarea</h2>
-        <input type="text" id="nuevaTarea" placeholder="Escribe una tarea...">
-        <button id="agregar">Agregar</button>
-        
-        <h2>Tareas</h2>
-        <ul id="listaTareas"></ul>
     </div>
 
     <script>
-        // --- Cronómetro ---
-        let tiempo = 0; // en segundos
-        let intervalo = null;
-        const display = document.querySelector('.cronometro');
-        const btnIniciar = document.getElementById('iniciar');
-        const btnPausar = document.getElementById('pausar');
-        const btnReiniciar = document.getElementById('reiniciar');
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzoPq1_9VID28xX50z1WPfV1UYTz58kAMhh8sJiGtZsdVr1SM9Uv7ss2CzYPcdTTzEX2w/exec';
+        const turnosContainer = document.getElementById('turnos-container');
+        const limpiezaActiva = document.getElementById('limpieza-activa');
+        const tituloTurno = document.getElementById('titulo-turno');
+        const cronometroDisplay = document.querySelector('.cronometro-regresivo');
+        const zonasContainer = document.getElementById('zonas-container');
 
-        function formatearTiempo(seg) {
-            const horas = Math.floor(seg / 3600).toString().padStart(2, '0');
-            const minutos = Math.floor((seg % 3600) / 60).toString().padStart(2, '0');
-            const segundos = (seg % 60).toString().padStart(2, '0');
-            return `${horas}:${minutos}:${segundos}`;
-        }
+        let intervaloRegresivo = null;
+        let tiempoRestante = 0;
 
-        function actualizarDisplay() {
-            display.textContent = formatearTiempo(tiempo);
-        }
-
-        btnIniciar.addEventListener('click', () => {
-            if (!intervalo) {
-                intervalo = setInterval(() => {
-                    tiempo++;
-                    actualizarDisplay();
-                }, 1000);
-                btnIniciar.disabled = true;
-                btnPausar.disabled = false;
-                btnReiniciar.disabled = false;
+        // Cargar turnos desde el Sheet
+        async function cargarTurnos() {
+            try {
+                const response = await fetch(WEB_APP_URL + '?accion=leer');
+                const data = await response.json();
+                if (data.status === 'success' && data.rows) {
+                    renderizarTurnos(data.rows);
+                }
+            } catch (err) {
+                turnosContainer.innerHTML = '<p>Error al cargar los turnos.</p>';
             }
-        });
-
-        btnPausar.addEventListener('click', () => {
-            clearInterval(intervalo);
-            intervalo = null;
-            btnIniciar.disabled = false;
-            btnIniciar.textContent = 'Reanudar';
-            btnPausar.disabled = true;
-        });
-
-        btnReiniciar.addEventListener('click', () => {
-            clearInterval(intervalo);
-            intervalo = null;
-            tiempo = 0;
-            actualizarDisplay();
-            btnIniciar.disabled = false;
-            btnIniciar.textContent = 'Iniciar';
-            btnPausar.disabled = true;
-            btnReiniciar.disabled = true;
-        });
-
-        // Inicializar display
-        actualizarDisplay();
-
-        // --- Lista de Tareas ---
-        const inputTarea = document.getElementById('nuevaTarea');
-        const btnAgregar = document.getElementById('agregar');
-        const lista = document.getElementById('listaTareas');
-
-        btnAgregar.addEventListener('click', agregarTarea);
-        inputTarea.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') agregarTarea();
-        });
-
-        function agregarTarea() {
-            const texto = inputTarea.value.trim();
-            if (texto === '') return;
-
-            const li = document.createElement('li');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            const span = document.createElement('span');
-            span.textContent = texto;
-            const btnEliminar = document.createElement('button');
-            btnEliminar.textContent = 'Eliminar';
-
-            checkbox.addEventListener('change', () => {
-                li.classList.toggle('completed');
-            });
-
-            btnEliminar.addEventListener('click', () => {
-                lista.removeChild(li);
-            });
-
-            li.appendChild(checkbox);
-            li.appendChild(span);
-            li.appendChild(btnEliminar);
-            lista.appendChild(li);
-
-            inputTarea.value = '';
         }
+
+        function renderizarTurnos(rows) {
+            turnosContainer.innerHTML = '';
+            rows.forEach((row, index) => {
+                // Asumiendo orden: ID, Día, Horario, Tipo, NroAmb, Hab, Baños, Sala, Cocina, Comedor, Lavadero, Balcón, Ventanas, LavPlatos, Duración
+                const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracion] = row;
+
+                const tarjeta = document.createElement('div');
+                tarjeta.className = 'tarjeta-turno';
+                tarjeta.innerHTML = `
+                    <h3>${dia} - ${horario}</h3>
+                    <p>${tipo} - ${nroAmb || 'Otro'}</p>
+                    <p class="duracion">Duración: ${duracion} minutos</p>
+                    <button class="btn-comenzar">Comenzar</button>
+                `;
+                tarjeta.querySelector('.btn-comenzar').addEventListener('click', () => iniciarLimpieza(row));
+                turnosContainer.appendChild(tarjeta);
+            });
+        }
+
+        function iniciarLimpieza(row) {
+            const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos, duracionStr] = row;
+            const duracion = parseInt(duracionStr) || 0;
+
+            tituloTurno.textContent = `${dia} ${horario} - ${tipo} ${nroAmb || ''}`;
+            tiempoRestante = duracion * 60;
+            actualizarCronometro();
+            limpiarIntervalo();
+            intervaloRegresivo = setInterval(() => {
+                tiempoRestante--;
+                actualizarCronometro();
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervaloRegresivo);
+                    cronometroDisplay.textContent = '¡Completado!';
+                }
+            }, 1000);
+
+            generarZonas(row);
+            turnosContainer.style.display = 'none';
+            limpiezaActiva.style.display = 'block';
+        }
+
+        function actualizarCronometro() {
+            const mins = Math.floor(tiempoRestante / 60).toString().padStart(2, '0');
+            const segs = (tiempoRestante % 60).toString().padStart(2, '0');
+            cronometroDisplay.textContent = `${mins}:${segs}`;
+        }
+
+        function limpiarIntervalo() {
+            if (intervaloRegresivo) clearInterval(intervaloRegresivo);
+        }
+
+        function generarZonas(row) {
+            const [id, dia, horario, tipo, nroAmb, hab, banos, sala, cocina, comedor, lavadero, balcon, ventanas, lavPlatos] = row;
+            zonasContainer.innerHTML = '';
+
+            const esCompleta = tipo.includes('Completa');
+            const tiempoBanoCocina = esCompleta ? 55 : 35;
+
+            // Habitaciones
+            const numHab = parseInt(hab) || 0;
+            for (let i = 1; i <= numHab; i++) {
+                agregarZona(`Habitación ${i}`, 25, tareasGenerales);
+            }
+            // Sala de estar
+            if (sala === 'Sí') agregarZona('Sala de Estar', 25, tareasGenerales);
+            // Comedor
+            if (comedor === 'Sí') agregarZona('Comedor', 25, tareasGenerales);
+            // Baños
+            const numBanos = parseInt(banos) || 0;
+            for (let i = 1; i <= numBanos; i++) {
+                agregarZona(`Baño ${i}`, tiempoBanoCocina, tareasBano);
+            }
+            // Cocina
+            if (cocina === 'Sí') agregarZona('Cocina', tiempoBanoCocina, tareasCocina);
+            // Opcionales
+            if (lavadero === 'Sí') agregarZona('Lavadero', 10, tareasGenerales);
+            if (balcon === 'Sí') agregarZona('Balcón', 10, tareasGenerales);
+            if (ventanas === 'Sí') agregarZona('Ventanas', 10, tareasGenerales);
+            if (lavPlatos === 'Sí') agregarZona('Lavado de Platos', 10, tareasGenerales);
+        }
+
+        const tareasGenerales = [
+            "Telarañas de techos (plumero)",
+            "Polvo muebles y estantes (plumero y paño seco)",
+            "Aspirado de pisos",
+            "Mopeado",
+            "Aromatización",
+            "Revisión final"
+        ];
+
+        const tareasBano = [
+            "Telarañas de techo (plumero)",
+            "Espejo (paño microfibra + limpiavidrios)",
+            "Inodoro y bidet (paño + lavandina)",
+            "Aspirado",
+            "Mopeado",
+            "Retiro y cambio de bolsa",
+            "Aromatización",
+            "Revisión final"
+        ];
+
+        const tareasCocina = [
+            "Alacena (plumero y paño seco)",
+            "Electrodomésticos (paño + desengrasante)",
+            "Bacha y Hornallas (paño + desengrasante)",
+            "Aspirado",
+            "Mopeado",
+            "Aromatización",
+            "Revisión final"
+        ];
+
+        function agregarZona(nombre, minutos, listaTareas) {
+            const zona = document.createElement('div');
+            zona.className = 'tarjeta-zona';
+            zona.innerHTML = `
+                <h4>${nombre}</h4>
+                <div class="tiempo-zona">${minutos} minutos</div>
+                <button class="btn-iniciar-zona">Iniciar</button>
+                <ul class="lista-tareas"></ul>
+            `;
+
+            const btnIniciar = zona.querySelector('.btn-iniciar-zona');
+            const ul = zona.querySelector('.lista-tareas');
+
+            btnIniciar.addEventListener('click', () => {
+                if (ul.style.display === 'block') {
+                    ul.style.display = 'none';
+                    btnIniciar.textContent = 'Iniciar';
+                } else {
+                    ul.style.display = 'block';
+                    btnIniciar.textContent = 'Ocultar';
+                    if (ul.children.length === 0) {
+                        listaTareas.forEach((tarea, idx) => {
+                            const li = document.createElement('li');
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            if (idx === listaTareas.length - 1) checkbox.disabled = true; // Revisión final
+                            checkbox.addEventListener('change', () => {
+                                if (idx < listaTareas.length - 1) {
+                                    // Habilitar revisión final solo si todas las anteriores están marcadas
+                                    const revisionCheckbox = ul.querySelector('input[type="checkbox"]:last-child');
+                                    const todasAnteriores = Array.from(ul.querySelectorAll('input[type="checkbox"]'))
+                                        .slice(0, -1).every(cb => cb.checked);
+                                    revisionCheckbox.disabled = !todasAnteriores;
+                                }
+                            });
+                            li.appendChild(checkbox);
+                            li.appendChild(document.createTextNode(tarea));
+                            ul.appendChild(li);
+                        });
+                    }
+                }
+            });
+
+            zonasContainer.appendChild(zona);
+        }
+
+        // Cargar turnos al iniciar
+        cargarTurnos();
     </script>
 </body>
 </html>
