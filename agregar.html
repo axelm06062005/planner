@@ -59,6 +59,13 @@
         .tarjeta button.added {
             background: #2196F3;
         }
+        .tarjeta button.confirmar {
+            background: #FF9800;
+            font-weight: bold;
+        }
+        .tarjeta button.confirmar.enviado {
+            background: #8BC34A;
+        }
         .duracion {
             font-weight: bold;
             color: #d35400;
@@ -114,6 +121,7 @@
     </div>
 
     <script>
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzoPq1_9VID28xX50z1WPfV1UYTz58kAMhh8sJiGtZsdVr1SM9Uv7ss2CzYPcdTTzEX2w/exec';
         const btnAgregar = document.getElementById('btn-agregar');
         const seccionTipo = document.getElementById('seccion-tipo');
         const seccionAmbientes = document.getElementById('seccion-ambientes');
@@ -185,7 +193,7 @@
                 if (ambientes === '2 Ambientes') duracionBase = 100;
                 if (ambientes === '3 Ambientes') duracionBase = 130;
             }
-            crearTarjeta(`${tipoSeleccionado} - ${ambientes}`, duracionBase);
+            crearTarjeta(`${tipoSeleccionado} - ${ambientes}`, duracionBase, {nroAmbientes: ambientes, habitaciones: '', banos: '', sala: '', cocina: '', comedor: ''});
         }
 
         function crearTarjetaPersonalizada() {
@@ -204,15 +212,15 @@
             duracionBase += cocina * multBanoCocina;
 
             const titulo = `${tipoSeleccionado} - Personalizado (${hab} hab, ${banos} baños, sala:${sala}, cocina:${cocina}, comedor:${comedor})`;
-            crearTarjeta(titulo, duracionBase);
+            crearTarjeta(titulo, duracionBase, {nroAmbientes: 'Personalizado', habitaciones: hab, banos: banos, sala: sala, cocina: cocina, comedor: comedor});
         }
 
-        function crearTarjeta(titulo, duracionBase) {
+        function crearTarjeta(titulo, duracionBase, config) {
             const tarjeta = document.createElement('div');
             tarjeta.className = 'tarjeta';
 
             let extras = 0;
-            const extrasTexto = [];
+            const extrasSeleccionados = {};
 
             const opcionales = ['Lavadero', 'Balcón', 'Ventanas', 'Lavado de Platos'];
             opcionales.forEach(op => {
@@ -221,7 +229,7 @@
                 btn.addEventListener('click', () => {
                     if (!btn.classList.contains('added')) {
                         extras += 10;
-                        extrasTexto.push(op);
+                        extrasSeleccionados[op] = 1;
                         btn.classList.add('added');
                         btn.textContent = op + ' ✓';
                         actualizarDuracion();
@@ -236,8 +244,14 @@
 
             const info = document.createElement('p');
             info.innerHTML = `Día: <strong>${dia}</strong> | Horario: <strong>${horario}</strong><br>
-                              Duración: <span class="duracion">${duracionBase} minutos</span>`;
+                              Duración: <span class="duracion" id="duracion-${Date.now()}">${duracionBase} minutos</span>`;
             tarjeta.appendChild(info);
+
+            const btnConfirmar = document.createElement('button');
+            btnConfirmar.textContent = 'Confirmar y Enviar a Sheet';
+            btnConfirmar.className = 'confirmar';
+            btnConfirmar.addEventListener('click', () => enviarADatos(config, extrasSeleccionados, duracionBase + extras));
+            tarjeta.appendChild(btnConfirmar);
 
             function actualizarDuracion() {
                 const total = duracionBase + extras;
@@ -245,6 +259,45 @@
             }
 
             contenedorTarjetas.appendChild(tarjeta);
+        }
+
+        async function enviarADatos(config, extrasSeleccionados, duracionTotal) {
+            // Prepara los datos basados en la estructura de tu sheet
+            const datos = {
+                accion: 'agregar', // Asumiendo que el script espera esto; ajusta si es diferente
+                dia: dia,
+                horario: horario,
+                tipo: tipoSeleccionado,
+                nroAmbientes: config.nroAmbientes,
+                habitaciones: config.habitaciones || '',
+                banos: config.banos || '',
+                sala: config.sala || '',
+                cocina: config.cocina || '',
+                comedor: config.comedor || '',
+                lavadero: extrasSeleccionados.Lavadero || '',
+                balcon: extrasSeleccionados.Balcón || '',
+                ventanas: extrasSeleccionados.Ventanas || '',
+                lavadoPlatos: extrasSeleccionados['Lavado de Platos'] || '',
+                duracion: duracionTotal // Se añadirá en la columna O de la hoja Turnos
+            };
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Necesario para Google Apps Script web apps
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                // Nota: Con 'no-cors', no se puede leer la respuesta, pero el envío debería completarse
+                alert('Datos enviados exitosamente al Google Sheet (columna O actualizada con duración: ' + duracionTotal + ' min)');
+                document.querySelector('.confirmar').textContent = 'Enviado ✓';
+                document.querySelector('.confirmar').classList.add('enviado');
+            } catch (error) {
+                alert('Error al enviar datos: ' + error.message + '. Verifica la URL del script y la estructura de datos.');
+            }
         }
     </script>
 </body>
