@@ -107,18 +107,26 @@
         /* Colores por zona */
         .zona-bano { background: #f9e79f; }
         .zona-cocina { background: #f8b0b0; }
-        .zona-general { background: #: #a7d8f9; }
+        .zona-general { background: #a7d8f9; }
         .zona-opcional { background: #c8e6c9; }
 
         .tarjeta-zona h4 {
-            margin: 0 0 8px;
+            margin: 0 0 10px;
             font-size: 1.3em;
+        }
+        .tiempo-zona {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 8px;
         }
         .cronometro-zona {
             font-size: 1.4em;
             font-weight: bold;
-            color: #e74c3c;
+            color: #27ae60;
             margin: 10px 0;
+        }
+        .cronometro-zona.agotado {
+            color: #e74c3c !important;
         }
         .btn-iniciar-zona, .btn-terminar {
             background: #3498db;
@@ -174,7 +182,6 @@
         <h1>Turnos de Limpieza</h1>
         <div id="turnos-container" class="turnos-container"></div>
 
-        <!-- Sección de limpieza activa -->
         <div id="limpieza-activa" class="limpieza-activa">
             <h2 id="titulo-turno">Turno Actual</h2>
             <div class="cronometro-regresivo">00:00</div>
@@ -197,7 +204,7 @@
         const limpiezaActiva = document.getElementById('limpieza-activa');
         const tituloTurno = document.getElementById('titulo-turno');
         const cronometroDisplay = document.querySelector('.cronometro-regresivo');
-       07        const zonasContainer = document.getElementById('zonas-container');
+        const zonasContainer = document.getElementById('zonas-container');
         const btnFinalizarLimpieza = document.getElementById('btn-finalizar-limpieza');
         const camaraInput = document.getElementById('camara-input');
 
@@ -325,43 +332,31 @@
             zona.className = `tarjeta-zona ${claseColor}`;
             zona.innerHTML = `
                 <h4>${nombre}</h4>
-                <div class="cronometro-zona">${minutos}:00</div>
+                <div class="tiempo-zona">Tiempo sugerido: ${minutos} minutos</div>
+                <div class="cronometro-zona">--:--</div>
                 <button class="btn-iniciar-zona">Iniciar Tareas</button>
                 <button class="btn-terminar">Terminar</button>
                 <ul class="lista-tareas"></ul>
             `;
 
-            const cronometroZona = zona.querySelector('.cronometro-zona');
             const btnIniciar = zona.querySelector('.btn-iniciar-zona');
             const btnTerminar = zona.querySelector('.btn-terminar');
             const ul = zona.querySelector('.lista-tareas');
+            const cronometroZona = zona.querySelector('.cronometro-zona');
 
-            let tiempoZonaRestante = minutos * 60;
-            let intervaloZona = null;
             let zonaTerminada = false;
+            let intervaloZona = null;
+            let tiempoZonaRestante = minutos * 60;
 
             function actualizarCronometroZona() {
-                const mins = Math.floor(tiempoZonaRestante / 60).toString().padStart(2, '0');
-                const segs = (tiempoZonaRestante % 60).toString().padStart(2, '0');
-                cronometroZona.textContent = tiempoZonaRestante > 0 ? `${mins}:${segs}` : '¡Completado!';
-            }
-
-            function iniciarCronometroZona() {
-                if (intervaloZona) return;
-                intervaloZona = setInterval(() => {
-                    tiempoZonaRestante--;
-                    actualizarCronometroZona();
-                    if (tiempoZonaRestante <= 0) {
-                        clearInterval(intervaloZona);
-                        intervaloZona = null;
-                    }
-                }, 1000);
-            }
-
-            function detenerCronometroZona() {
-                if (intervaloZona) {
+                if (tiempoZonaRestante > 0) {
+                    const mins = Math.floor(tiempoZonaRestante / 60).toString().padStart(2, '0');
+                    const segs = (tiempoZonaRestante % 60).toString().padStart(2, '0');
+                    cronometroZona.textContent = `${mins}:${segs}`;
+                } else {
+                    cronometroZona.textContent = '¡Tiempo agotado!';
+                    cronometroZona.classList.add('agotado');
                     clearInterval(intervaloZona);
-                    intervaloZona = null;
                 }
             }
 
@@ -369,6 +364,7 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
                 try {
                     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
                         method: 'POST',
@@ -377,7 +373,7 @@
                     const data = await res.json();
                     return data.secure_url;
                 } catch (err) {
-                    alert('Error al subir la foto');
+                    alert('Error al subir la foto a Cloudinary');
                     return null;
                 }
             }
@@ -394,7 +390,7 @@
                         btnTerminar.classList.add('terminado');
                         zona.classList.add('terminada');
                         zonaTerminada = true;
-                        detenerCronometroZona();
+                        clearInterval(intervaloZona); // Detener cronómetro al terminar
                         verificarTodasZonasTerminadas();
                     } else {
                         btnTerminar.textContent = 'Error foto';
@@ -422,12 +418,10 @@
                 if (ul.style.display === 'block') {
                     ul.style.display = 'none';
                     btnIniciar.textContent = 'Iniciar Tareas';
-                    detenerCronometroZona();
+                    clearInterval(intervaloZona); // Pausar cronómetro
                 } else {
                     ul.style.display = 'block';
                     btnIniciar.textContent = 'Ocultar Tareas';
-                    iniciarCronometroZona();
-                    actualizarCronometroZona();
                     if (ul.children.length === 0) {
                         listaTareas.forEach((tarea, idx) => {
                             const li = document.createElement('li');
@@ -446,6 +440,14 @@
                             li.appendChild(document.createTextNode(tarea));
                             ul.appendChild(li);
                         });
+                    }
+                    // Iniciar o reanudar cronómetro
+                    if (!intervaloZona && tiempoZonaRestante > 0) {
+                        actualizarCronometroZona();
+                        intervaloZona = setInterval(() => {
+                            tiempoZonaRestante--;
+                            actualizarCronometroZona();
+                        }, 1000);
                     }
                 }
             });
