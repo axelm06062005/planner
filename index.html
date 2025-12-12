@@ -347,6 +347,7 @@
             let zonaTerminada = false;
             let intervaloZona = null;
             let tiempoZonaRestante = minutos * 60;
+            let cronometroIniciado = false;
 
             function actualizarCronometroZona() {
                 if (tiempoZonaRestante > 0) {
@@ -390,7 +391,7 @@
                         btnTerminar.classList.add('terminado');
                         zona.classList.add('terminada');
                         zonaTerminada = true;
-                        clearInterval(intervaloZona); // Detener cronómetro al terminar
+                        clearInterval(intervaloZona); // Detener solo al terminar
                         verificarTodasZonasTerminadas();
                     } else {
                         btnTerminar.textContent = 'Error foto';
@@ -418,7 +419,7 @@
                 if (ul.style.display === 'block') {
                     ul.style.display = 'none';
                     btnIniciar.textContent = 'Iniciar Tareas';
-                    clearInterval(intervaloZona); // Pausar cronómetro
+                    // NO pausamos el cronómetro aquí
                 } else {
                     ul.style.display = 'block';
                     btnIniciar.textContent = 'Ocultar Tareas';
@@ -441,8 +442,10 @@
                             ul.appendChild(li);
                         });
                     }
-                    // Iniciar o reanudar cronómetro
-                    if (!intervaloZona && tiempoZonaRestante > 0) {
+
+                    // Iniciar cronómetro solo la primera vez
+                    if (!cronometroIniciado && tiempoZonaRestante > 0) {
+                        cronometroIniciado = true;
                         actualizarCronometroZona();
                         intervaloZona = setInterval(() => {
                             tiempoZonaRestante--;
